@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Commerce Spend Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;
+  --surface:#ffffff;
+  --surface2:#f0eee9;
+  --border:#e2dfd8;
+  --border2:#c8c4bc;
+  --accent:#2563eb;
+  --accent-light:#eff4ff;
+  --accent2:#1d4ed8;
+  --text:#18181b;
+  --text2:#52525b;
+  --text3:#a1a1aa;
+  --success:#16a34a;
+  --success-light:#f0fdf4;
+  --warning:#d97706;
+  --warning-light:#fffbeb;
+  --danger:#dc2626;
+  --danger-light:#fef2f2;
+  --purple:#7c3aed;
+  --purple-light:#f5f3ff;
+  --sans:'Sora',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --radius:14px;
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.05);
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+/* NAV */
+nav{width:100%;background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.nav-logo{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+.nav-logo span{color:var(--accent)}
+.nav-chip{background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 12px;border-radius:20px;letter-spacing:0.04em}
+
+/* PAGE WRAP */
+.page{width:100%;max-width:1000px;padding:40px 32px 80px}
+
+/* HERO */
+.hero{margin-bottom:36px}
+.hero h1{font-size:clamp(24px,4vw,36px);font-weight:700;letter-spacing:-0.03em;color:var(--text);line-height:1.15;margin-bottom:8px}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p{font-size:14px;color:var(--text2);line-height:1.7;max-width:560px;font-weight:400}
+
+/* SECTION LABEL */
+.sec-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+@media(max-width:700px){.kpi-grid{grid-template-columns:1fr 1fr}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:box-shadow 0.2s}
+.kpi:hover{box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.kpi-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:18px}
+.kpi-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px}
+.kpi-value{font-size:24px;font-weight:700;color:var(--text);letter-spacing:-0.02em;line-height:1}
+.kpi-value small{font-size:14px;font-weight:500;color:var(--text2)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.kpi-accent{position:absolute;top:0;right:0;bottom:0;width:3px}
+.kpi.blue .kpi-icon{background:var(--accent-light);color:var(--accent)}
+.kpi.blue .kpi-accent{background:var(--accent)}
+.kpi.green .kpi-icon{background:var(--success-light);color:var(--success)}
+.kpi.green .kpi-accent{background:var(--success)}
+.kpi.amber .kpi-icon{background:var(--warning-light);color:var(--warning)}
+.kpi.amber .kpi-accent{background:var(--warning)}
+.kpi.purple .kpi-icon{background:var(--purple-light);color:var(--purple)}
+.kpi.purple .kpi-accent{background:var(--purple)}
+
+/* LAYOUT: form + charts side by side */
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+@media(max-width:720px){.main-layout{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title svg{opacity:0.5}
+
+/* SLIDERS */
+.input-group{margin-bottom:18px}
+.input-group:last-child{margin-bottom:0}
+.input-row-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.input-name{font-size:13px;font-weight:500;color:var(--text)}
+.input-val{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--accent);background:var(--accent-light);padding:3px 10px;border-radius:6px}
+input[type=range]{width:100%;height:5px;-webkit-appearance:none;appearance:none;border-radius:3px;outline:none;cursor:pointer;background:var(--surface2)}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:linear-gradient(to right,var(--accent) 0%,var(--accent) var(--pct,50%),var(--surface2) var(--pct,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);margin-top:-7px;cursor:pointer;border:3px solid white;box-shadow:0 0 0 1px var(--accent);transition:transform 0.15s}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid white;cursor:pointer}
+.range-labels{display:flex;justify-content:space-between;margin-top:4px}
+.range-labels span{font-size:10px;font-family:var(--mono);color:var(--text3)}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:12px;margin-top:20px}
+.btn-predict{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;flex:1;transition:background 0.15s,transform 0.12s;letter-spacing:-0.01em}
+.btn-predict:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-predict:active{transform:scale(0.98)}
+.btn-reset{background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:10px;padding:13px 20px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s}
+.btn-reset:hover{background:var(--border)}
+
+/* RESULT SECTION */
+.result-section{display:none;animation:slideUp 0.3s ease}
+.result-section.show{display:block}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+.result-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;box-shadow:var(--shadow);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px}
+.result-left .label{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.result-amount{font-size:48px;font-weight:700;letter-spacing:-0.04em;color:var(--text);line-height:1}
+.result-amount sup{font-size:22px;color:var(--accent);vertical-align:super;font-weight:600}
+.result-right{text-align:right}
+.tier-pill{display:inline-block;font-size:12px;font-weight:700;padding:7px 18px;border-radius:20px;letter-spacing:0.04em;margin-bottom:6px}
+.tier-sub{font-size:12px;color:var(--text3)}
+.tier-low{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.tier-mid{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.tier-high{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.tier-elite{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
+
+/* CHARTS GRID */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.charts-grid{grid-template-columns:1fr}}
+
+/* CONTRIBUTION BAR CHART */
+.contrib-item{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.contrib-item:last-child{margin-bottom:0}
+.contrib-name{font-size:12px;color:var(--text2);font-weight:500;width:130px;flex-shrink:0}
+.contrib-bar-bg{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.contrib-bar{height:100%;border-radius:4px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1);width:0}
+.contrib-dollar{font-family:var(--mono);font-size:11px;color:var(--text2);min-width:62px;text-align:right;font-weight:500}
+
+/* FORMULA */
+.formula-card{background:var(--accent-light);border:1px solid rgba(37,99,235,0.15);border-radius:12px;padding:16px 20px;margin-bottom:20px}
+.formula-lbl{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px}
+.formula{font-family:var(--mono);font-size:11.5px;color:var(--text2);line-height:1.9;overflow-x:auto;white-space:nowrap}
+.formula .c{color:var(--accent);font-weight:500}
+.formula .v{color:var(--text)}
+.formula .o{color:var(--text3)}
+
+/* TRACE */
+.trace-card{background:var(--surface2);border-radius:10px;padding:16px;margin-top:16px}
+.trace-lbl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px}
+.trace-body{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:2}
+.trace-body .hi{color:var(--accent);font-weight:500}
+.trace-body .hi2{color:var(--success);font-weight:600}
+
+/* CHART CANVAS */
+.chart-wrap{position:relative;height:200px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Spend<span>Predict</span></div>
+  <div class="nav-chip">OLS · R² ≈ 0.985</div>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero" style="margin-bottom:28px">
+    <h1>E-Commerce Customer<br><em>Spend Predictor</em></h1>
+    <p>Adjust the four customer attributes and run the linear regression model to instantly predict annual spending — no server required.</p>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="sec-label">Model overview</div>
+  <div class="kpi-grid">
+    <div class="kpi blue">
+      <div class="kpi-accent"></div>
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">R² Score</div>
+      <div class="kpi-value">0.985</div>
+      <div class="kpi-sub">Model accuracy</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-accent"></div>
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-label">Avg Prediction</div>
+      <div class="kpi-value"><small>$</small><span id="kpi-avg">499</span></div>
+      <div class="kpi-sub">Baseline spend</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-accent"></div>
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-label">Top Feature</div>
+      <div class="kpi-value" style="font-size:14px;line-height:1.4">Membership<br><small>coef ×61.28</small></div>
+      <div class="kpi-sub">Highest driver</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-accent"></div>
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-label">Current Pred</div>
+      <div class="kpi-value"><small>$</small><span id="kpi-pred">—</span></div>
+      <div class="kpi-sub">Run model below</div>
+    </div>
+  </div>
+
+  <!-- FORMULA -->
+  <div class="formula-card">
+    <div class="formula-lbl">Linear regression equation</div>
+    <div class="formula">
+      <span class="v">Yearly_Spend</span><span class="o"> = </span><span class="c">25.981</span><span class="o"> × </span><span class="v">Session</span>
+      <span class="o"> + </span><span class="c">38.590</span><span class="o"> × </span><span class="v">App</span>
+      <span class="o"> + </span><span class="c">0.443</span><span class="o"> × </span><span class="v">Website</span>
+      <span class="o"> + </span><span class="c">61.279</span><span class="o"> × </span><span class="v">Membership</span>
+      <span class="o"> − </span><span class="c">1051.59</span>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT: sliders + charts -->
+  <div class="main-layout">
+
+    <!-- SLIDERS -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Customer Attributes
+      </div>
+
+      <div class="input-group">
+        <div class="input-row-top">
+          <div class="input-name">Avg. Session Length</div>
+          <div class="input-val" id="val-session">33.0 min</div>
+        </div>
+        <input type="range" id="r-session" min="20" max="40" step="0.1" value="33.0" oninput="syncRange('session',this.value,20,40)">
+        <div class="range-labels"><span>20 min</span><span>40 min</span></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-row-top">
+          <div class="input-name">Time on App</div>
+          <div class="input-val" id="val-app">12.1 min</div>
+        </div>
+        <input type="range" id="r-app" min="8" max="16" step="0.1" value="12.1" oninput="syncRange('app',this.value,8,16)">
+        <div class="range-labels"><span>8 min</span><span>16 min</span></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-row-top">
+          <div class="input-name">Time on Website</div>
+          <div class="input-val" id="val-website">37.1 min</div>
+        </div>
+        <input type="range" id="r-website" min="30" max="40" step="0.1" value="37.1" oninput="syncRange('website',this.value,30,40)">
+        <div class="range-labels"><span>30 min</span><span>40 min</span></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-row-top">
+          <div class="input-name">Membership Length</div>
+          <div class="input-val" id="val-membership">3.5 yrs</div>
+        </div>
+        <input type="range" id="r-membership" min="0" max="7" step="0.1" value="3.5" oninput="syncRange('membership',this.value,0,7)">
+        <div class="range-labels"><span>0 yrs</span><span>7 yrs</span></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-predict" onclick="runPrediction()">Run Prediction →</button>
+        <button class="btn-reset" onclick="resetAll()">Reset</button>
+      </div>
+    </div>
+
+    <!-- COEFFICIENT CHART -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17V7M16 17v-5"/></svg>
+        Feature Coefficients
+      </div>
+      <div class="chart-wrap"><canvas id="coefChart"></canvas></div>
+      <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">Membership length has the strongest impact per unit on predicted spend, followed by time on app.</p>
+    </div>
+
+  </div>
+
+  <!-- RESULT SECTION -->
+  <div class="result-section" id="result-section">
+
+    <!-- RESULT HERO -->
+    <div class="result-hero">
+      <div class="result-left">
+        <div class="label">Predicted yearly spend</div>
+        <div class="result-amount"><sup>$</sup><span id="out-amount">0</span></div>
+      </div>
+      <div class="result-right">
+        <div class="tier-pill" id="tier-pill">—</div>
+        <div class="tier-sub" id="tier-sub">—</div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="charts-grid">
+
+      <!-- CONTRIBUTION BARS -->
+      <div class="card">
+        <div class="card-title">Feature Contributions ($)</div>
+        <div class="contrib-item">
+          <div class="contrib-name">Membership yrs</div>
+          <div class="contrib-bar-bg"><div class="contrib-bar" id="bar-mem" style="background:#2563eb"></div></div>
+          <div class="contrib-dollar" id="cd-mem">—</div>
+        </div>
+        <div class="contrib-item">
+          <div class="contrib-name">Time on app</div>
+          <div class="contrib-bar-bg"><div class="contrib-bar" id="bar-app" style="background:#16a34a"></div></div>
+          <div class="contrib-dollar" id="cd-app">—</div>
+        </div>
+        <div class="contrib-item">
+          <div class="contrib-name">Session length</div>
+          <div class="contrib-bar-bg"><div class="contrib-bar" id="bar-ses" style="background:#d97706"></div></div>
+          <div class="contrib-dollar" id="cd-ses">—</div>
+        </div>
+        <div class="contrib-item">
+          <div class="contrib-name">Time on website</div>
+          <div class="contrib-bar-bg"><div class="contrib-bar" id="bar-web" style="background:#7c3aed"></div></div>
+          <div class="contrib-dollar" id="cd-web">—</div>
+        </div>
+
+        <div class="trace-card">
+          <div class="trace-lbl">Computation trace</div>
+          <div class="trace-body" id="trace-body">—</div>
+        </div>
+      </div>
+
+      <!-- DONUT CHART -->
+      <div class="card">
+        <div class="card-title">Contribution Share (%)</div>
+        <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      </div>
+
+    </div>
+
+    <!-- SENSITIVITY CHART -->
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">Membership Length vs Predicted Spend (sensitivity)</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="lineChart"></canvas></div>
+      <p style="font-size:11px;color:var(--text3);margin-top:10px">Shows how predicted spend changes as membership length increases, holding all other inputs at their current values.</p>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const COEF={session:25.981,app:38.590,website:0.443,membership:61.279};
+const INTERCEPT=-1051.59;
+const state={session:33.0,app:12.1,website:37.1,membership:3.5};
+
+function predict(s,a,w,m){
+  return Math.max(0,COEF.session*s+COEF.app*a+COEF.website*w+COEF.membership*m+INTERCEPT);
+}
+
+function syncRange(key,val,min,max){
+  state[key]=parseFloat(val);
+  const unit=key==='membership'?' yrs':' min';
+  document.getElementById('val-'+key).textContent=parseFloat(val).toFixed(1)+unit;
+  const pct=((val-min)/(max-min))*100;
+  document.getElementById('r-'+key).style.setProperty('--pct',pct+'%');
+}
+
+// Init range fills
+syncRange('session',33.0,20,40);
+syncRange('app',12.1,8,16);
+syncRange('website',37.1,30,40);
+syncRange('membership',3.5,0,7);
+
+// Compute baseline average for KPI
+const baseAvg=predict(33.0,12.1,37.1,3.5);
+document.getElementById('kpi-avg').textContent=Math.round(baseAvg).toLocaleString();
+
+// ── Coefficient bar chart ──
+const coefCtx=document.getElementById('coefChart').getContext('2d');
+const coefChart=new Chart(coefCtx,{
+  type:'bar',
+  data:{
+    labels:['Session Length','Time on App','Time on Website','Membership Yrs'],
+    datasets:[{
+      label:'Coefficient',
+      data:[25.981,38.590,0.443,61.279],
+      backgroundColor:['rgba(217,119,6,0.85)','rgba(22,163,74,0.85)','rgba(124,58,237,0.85)','rgba(37,99,235,0.85)'],
+      borderRadius:6,
+      borderSkipped:false,
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'coef: '+c.raw}}},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{family:'Sora',size:10},color:'#a1a1aa'}},
+      y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{family:'Sora',size:10},color:'#a1a1aa'}}
+    }
+  }
+});
+
+// ── Donut chart ──
+const donutCtx=document.getElementById('donutChart').getContext('2d');
+const donutChart=new Chart(donutCtx,{
+  type:'doughnut',
+  data:{
+    labels:['Membership','App','Session','Website'],
+    datasets:[{
+      data:[0,0,0,0],
+      backgroundColor:['rgba(37,99,235,0.85)','rgba(22,163,74,0.85)','rgba(217,119,6,0.85)','rgba(124,58,237,0.85)'],
+      borderWidth:2,
+      borderColor:'#fff',
+      hoverOffset:6
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{family:'Sora',size:11},padding:14,boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+c.raw+'%'}}}
+  }
+});
+
+// ── Line chart ──
+const lineCtx=document.getElementById('lineChart').getContext('2d');
+const lineChart=new Chart(lineCtx,{
+  type:'line',
+  data:{
+    labels:[],
+    datasets:[{
+      label:'Predicted Spend ($)',
+      data:[],
+      borderColor:'rgba(37,99,235,1)',
+      backgroundColor:'rgba(37,99,235,0.08)',
+      fill:true,
+      tension:0.4,
+      pointRadius:0,
+      pointHoverRadius:5,
+      borderWidth:2.5
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+Math.round(c.raw).toLocaleString()}}},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{family:'Sora',size:10},color:'#a1a1aa'},title:{display:true,text:'Membership Length (yrs)',font:{family:'Sora',size:11},color:'#a1a1aa'}},
+      y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{family:'Sora',size:10},color:'#a1a1aa',callback:v=>'$'+Math.round(v).toLocaleString()}}
+    }
+  }
+});
+
+function runPrediction(){
+  const s=state.session,a=state.app,w=state.website,m=state.membership;
+  const cMem=COEF.membership*m;
+  const cApp=COEF.app*a;
+  const cSes=COEF.session*s;
+  const cWeb=COEF.website*w;
+  const total=cMem+cApp+cSes+cWeb+INTERCEPT;
+  const pred=Math.max(0,total);
+
+  // Update KPI pred
+  document.getElementById('kpi-pred').textContent=Math.round(pred).toLocaleString();
+
+  // Result hero
+  document.getElementById('out-amount').textContent=pred.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // Tier
+  const pill=document.getElementById('tier-pill');
+  const sub=document.getElementById('tier-sub');
+  pill.className='tier-pill';
+  if(pred<350){pill.textContent='Low Value';pill.classList.add('tier-low');sub.textContent='Below average spender'}
+  else if(pred<500){pill.textContent='Mid-Tier';pill.classList.add('tier-mid');sub.textContent='Average customer'}
+  else if(pred<650){pill.textContent='High Value';pill.classList.add('tier-high');sub.textContent='Above average spender'}
+  else{pill.textContent='Elite';pill.classList.add('tier-elite');sub.textContent='Top-tier customer'}
+
+  // Contribution bars
+  const contribs=[{id:'mem',val:cMem},{id:'app',val:cApp},{id:'ses',val:cSes},{id:'web',val:cWeb}];
+  const maxC=Math.max(...contribs.map(c=>Math.abs(c.val)));
+  contribs.forEach(c=>{
+    const pct=maxC>0?(Math.abs(c.val)/maxC)*100:0;
+    document.getElementById('bar-'+c.id).style.width=pct.toFixed(1)+'%';
+    document.getElementById('cd-'+c.id).textContent='$'+c.val.toFixed(0);
+  });
+
+  // Donut data — % of positive contributions
+  const posSum=[cMem,cApp,cSes,cWeb].reduce((a,v)=>a+Math.abs(v),0);
+  const dPcts=[cMem,cApp,cSes,cWeb].map(v=>posSum>0?Math.round((Math.abs(v)/posSum)*100):0);
+  donutChart.data.datasets[0].data=dPcts;
+  donutChart.update();
+
+  // Line chart — sensitivity over membership 0..7
+  const labels=[],data=[];
+  for(let mv=0;mv<=7;mv+=0.25){
+    labels.push(mv.toFixed(2));
+    data.push(predict(s,a,w,mv));
+  }
+  lineChart.data.labels=labels;
+  lineChart.data.datasets[0].data=data;
+  lineChart.update();
+
+  // Trace
+  document.getElementById('trace-body').innerHTML=
+    `<span class="hi">25.981</span>×${s.toFixed(1)} + <span class="hi">38.590</span>×${a.toFixed(1)} + <span class="hi">0.443</span>×${w.toFixed(1)} + <span class="hi">61.279</span>×${m.toFixed(1)} − 1051.59<br>`+
+    `= ${cSes.toFixed(2)} + ${cApp.toFixed(2)} + ${cWeb.toFixed(2)} + ${cMem.toFixed(2)} − 1051.59<br>`+
+    `= <span class="hi2">$${pred.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`;
+
+  document.getElementById('result-section').classList.add('show');
+}
+
+function resetAll(){
+  const def={session:33.0,app:12.1,website:37.1,membership:3.5};
+  const ranges={session:[20,40],app:[8,16],website:[30,40],membership:[0,7]};
+  Object.keys(def).forEach(k=>{
+    document.getElementById('r-'+k).value=def[k];
+    syncRange(k,def[k],ranges[k][0],ranges[k][1]);
+  });
+  document.getElementById('result-section').classList.remove('show');
+  document.getElementById('kpi-pred').textContent='—';
+}
+</script>
+</body>
+</html>
